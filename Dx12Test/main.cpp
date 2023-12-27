@@ -4,12 +4,15 @@
 #include <dxgi1_6.h>
 #include <vector>
 #include <DirectXMath.h>
+
+#include <d3dcompiler.h>
 #ifdef _DEBUG
 #include <iostream>
 #endif // DEBUG
 
 #pragma comment(lib,"d3d12.lib")
 #pragma comment(lib,"dxgi.lib")
+#pragma comment(lib,"d3dcompiler.lib")
 
 using namespace std;
 using namespace DirectX;
@@ -198,9 +201,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	ShowWindow(hwnd, SW_SHOW);
 
 	XMFLOAT3 vertices[] = {
-		{ -1.0f, -1.0f, 0.0f },
-		{ -1.0f, 1.0f, 0.0f },
-		{ 1.0f, -1.0f, 0.0f },
+		{ -0.4f, -0.7f, 0.0f },
+		{ -0.4f, 0.7f, 0.0f },
+		{ 0.4f, -0.7f, 0.0f },
+		{ 0.4f, 0.7f, 0.0f },
 	};
 
 	D3D12_HEAP_PROPERTIES heapProp = {};
@@ -239,6 +243,126 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	vbView.SizeInBytes = sizeof(vertices);
 	vbView.StrideInBytes = sizeof(vertices[0]);
 
+	unsigned short indices[] = { 0, 1, 2, 2, 1, 3 };
+	ID3D12Resource* indexBuff = nullptr;
+	resDesc.Width = sizeof(indices);
+	result = _dev->CreateCommittedResource(
+		&heapProp,
+		D3D12_HEAP_FLAG_NONE,
+		&resDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&indexBuff)
+	);
+
+	unsigned short* mappedIdx = nullptr;
+	result = indexBuff->Map(0, nullptr, (void**)&mappedIdx);
+	copy(begin(indices), end(indices), mappedIdx);
+	indexBuff->Unmap(0, nullptr);
+
+	D3D12_INDEX_BUFFER_VIEW ibView = {};
+	ibView.BufferLocation = indexBuff->GetGPUVirtualAddress();
+	ibView.Format = DXGI_FORMAT_R16_UINT;
+	ibView.SizeInBytes = sizeof(indices);
+
+	ID3DBlob* vsBlob = nullptr;
+	ID3DBlob* psBlob = nullptr;
+	ID3DBlob* errorBlob = nullptr;
+
+	result = D3DCompileFromFile(
+		L"BasicVertexShader.hlsl",
+		nullptr,
+		D3D_COMPILE_STANDARD_FILE_INCLUDE,
+		"BasicVS",
+		"vs_5_0",
+		D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION,
+		0,
+		&vsBlob,
+		&errorBlob
+	);
+	
+	result = D3DCompileFromFile(L"BasicPixelShader.hlsl",
+		nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE,
+		"BasicPS", "ps_5_0",
+		D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION,
+		0, &psBlob, &errorBlob);
+
+	if (FAILED(result)) {
+		if (result == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)) {
+			::OutputDebugStringA("ƒtƒ@ƒCƒ‹‚ªŒ©“–‚½‚è‚Ü‚¹‚ñ");
+		}
+		else {
+			std::string errstr;
+			errstr.resize(errorBlob->GetBufferSize());
+			std::copy_n((char*)errorBlob->GetBufferPointer(), errorBlob->GetBufferSize(), errstr.begin());
+			errstr += "\n";
+			OutputDebugStringA(errstr.c_str());
+		}
+		exit(1);
+	}
+
+	D3D12_INPUT_ELEMENT_DESC inputLayout[] = {
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,0,D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,0 },
+	};
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC gpipeline = {};
+
+	gpipeline.pRootSignature = nullptr;
+	gpipeline.VS.pShaderBytecode = vsBlob->GetBufferPointer();
+	gpipeline.VS.BytecodeLength = vsBlob->GetBufferSize();
+	gpipeline.PS.pShaderBytecode = psBlob->GetBufferPointer();
+	gpipeline.PS.BytecodeLength = psBlob->GetBufferSize();
+
+	gpipeline.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+
+	gpipeline.BlendState.AlphaToCoverageEnable = false;
+	gpipeline.BlendState.IndependentBlendEnable = false;
+	D3D12_RENDER_TARGET_BLEND_DESC renderTargetBlendDesc = {};
+	renderTargetBlendDesc.BlendEnable = false;
+	renderTargetBlendDesc.LogicOpEnable = false;
+	renderTargetBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+	gpipeline.BlendState.RenderTarget[0] = renderTargetBlendDesc;
+
+	gpipeline.RasterizerState.MultisampleEnable = false;
+
+	gpipeline.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	gpipeline.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+	gpipeline.RasterizerState.DepthClipEnable = true;
+
+	gpipeline.InputLayout.pInputElementDescs = inputLayout;
+	gpipeline.InputLayout.NumElements = _countof(inputLayout);
+	gpipeline.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	gpipeline.NumRenderTargets = 1;
+	gpipeline.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	gpipeline.SampleDesc.Count = 1;	
+	gpipeline.SampleDesc.Quality = 0;
+	ID3D12RootSignature* rootsignature = nullptr;
+	D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc = {};
+	rootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+	ID3DBlob* rootSigBlob = nullptr;
+	result = D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1_0, &rootSigBlob, &errorBlob);
+	result = _dev->CreateRootSignature(0, rootSigBlob->GetBufferPointer(), rootSigBlob->GetBufferSize(), IID_PPV_ARGS(&rootsignature));
+	rootSigBlob->Release();
+	gpipeline.pRootSignature = rootsignature;
+
+	ID3D12PipelineState* pipelineState = nullptr;
+
+	result = _dev->CreateGraphicsPipelineState(&gpipeline, IID_PPV_ARGS(&pipelineState));
+
+	D3D12_VIEWPORT viewport = {};
+	viewport.Width = WINDOW_WIDTH;
+	viewport.Height = WINDOW_HEIGHT;
+	viewport.TopLeftX = 0;
+	viewport.TopLeftY = 0;
+	viewport.MinDepth = 0.0f;
+	viewport.MaxDepth = 1.0f;
+
+	D3D12_RECT scissorRect = {};
+	scissorRect.left = 0;
+	scissorRect.top = 0;
+	scissorRect.right = scissorRect.left + WINDOW_WIDTH;
+	scissorRect.bottom = scissorRect.top + WINDOW_HEIGHT;
+
 	MSG msg = {};
 
 	while (true)
@@ -264,6 +388,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		BarrierDesc.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 		BarrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 		_cmdList->ResourceBarrier(1, &BarrierDesc);
+		_cmdList->SetPipelineState(pipelineState);
 
 		auto rtvH = _rtvHeaps->GetCPUDescriptorHandleForHeapStart();
 		rtvH.ptr += bbIdx * _dev->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
@@ -271,6 +396,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		_cmdList->OMSetRenderTargets(1, &rtvH, true, nullptr);
 		float clearColor[] = { 1.0f, 1.0f, 0.0f, 1.0f };
 		_cmdList->ClearRenderTargetView(rtvH, clearColor, 0, nullptr);
+
+		_cmdList->RSSetViewports(1, &viewport);
+		_cmdList->RSSetScissorRects(1, &scissorRect);
+		_cmdList->SetGraphicsRootSignature(rootsignature);
+
+		_cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		_cmdList->IASetVertexBuffers(0, 1, &vbView);
+		_cmdList->IASetIndexBuffer(&ibView);
+
+		_cmdList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+
 		_cmdList->Close();
 		ID3D12CommandList* cmdLists[] = { _cmdList };
 		_cmdQueue->ExecuteCommandLists(1, cmdLists);
