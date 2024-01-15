@@ -1,4 +1,9 @@
-float4 BasicVS( float4 pos : POSITION ) : SV_POSITION
+#include "BasicType.hlsli"
+
+BasicType BasicVS( float4 pos : POSITION, float2 uv : TEXCOORD )
 {
-	return pos;
+	BasicType output;
+    output.svpos = pos;
+    output.uv = uv;
+    return output;
 }

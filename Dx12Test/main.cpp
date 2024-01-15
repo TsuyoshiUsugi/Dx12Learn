@@ -200,11 +200,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	ShowWindow(hwnd, SW_SHOW);
 
-	XMFLOAT3 vertices[] = {
-		{ -0.4f, -0.7f, 0.0f },
-		{ -0.4f, 0.7f, 0.0f },
-		{ 0.4f, -0.7f, 0.0f },
-		{ 0.4f, 0.7f, 0.0f },
+	struct Vertex
+	{
+		XMFLOAT3 pos;
+		XMFLOAT2 uv;
+	};
+
+	Vertex vertices[] = {
+		{{ -0.4f, -0.7f, 0.0f }, {0.0f, 1.0f} },
+		{{ -0.4f, 0.7f, 0.0f }, {0.0f, 0.0f} },
+		{{ 0.4f, -0.7f, 0.0f }, {1.0f, 1.0f} },
+		{{ 0.4f, 0.7f, 0.0f }, {1.0f, 0.0f}}
 	};
 
 	D3D12_HEAP_PROPERTIES heapProp = {};
@@ -234,9 +240,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		IID_PPV_ARGS(&vertexBuff)
 	);
 
-	XMFLOAT3 *vertMap = nullptr;
+	Vertex *vertMap = nullptr;
 	result = vertexBuff->Map(0, nullptr, (void**)&vertMap);
-	copy(begin(vertices), end(vertices), vertMap);
+	std::copy(begin(vertices), end(vertices), vertMap);
 	vertexBuff->Unmap(0, nullptr);
 	D3D12_VERTEX_BUFFER_VIEW vbView = {};
 	vbView.BufferLocation = vertexBuff->GetGPUVirtualAddress();
@@ -257,7 +263,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	unsigned short* mappedIdx = nullptr;
 	result = indexBuff->Map(0, nullptr, (void**)&mappedIdx);
-	copy(begin(indices), end(indices), mappedIdx);
+	std::copy(begin(indices), end(indices), mappedIdx);
 	indexBuff->Unmap(0, nullptr);
 
 	D3D12_INDEX_BUFFER_VIEW ibView = {};
@@ -303,6 +309,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	D3D12_INPUT_ELEMENT_DESC inputLayout[] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,0,D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,0,D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,0 },
 	};
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC gpipeline = {};
