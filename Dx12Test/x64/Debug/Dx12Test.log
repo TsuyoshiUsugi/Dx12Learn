@@ -1,5 +1,4 @@
-﻿  compilation object save succeeded; see C:\Users\vantan\source\repos\Dx12Test\x64\Debug\BasicVertexShader.cso
-  compilation object save succeeded; see C:\Users\vantan\source\repos\Dx12Test\x64\Debug\BasicPixelShader.cso
-  main.cpp
+﻿  main.cpp
 C:\Users\vantan\source\repos\Dx12Test\Dx12Test\main.cpp(191,24): warning C4018: '<': signed と unsigned の数値を比較しようとしました。
+C:\Users\vantan\source\repos\Dx12Test\Dx12Test\main.cpp(447,113): warning C4267: '引数': 'size_t' から 'UINT' に変換しました。データが失われているかもしれません。
   Dx12Test.vcxproj -> C:\Users\vantan\source\repos\Dx12Test\x64\Debug\Dx12Test.exe
