@@ -370,7 +370,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
 	samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
 	samplerDesc.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
-	samplerDesc.Filter = D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_POINT;
+	samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
 	samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
 	samplerDesc.MinLOD = 0.0f;
 	samplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
@@ -430,7 +430,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	texHeapProp.VisibleNodeMask = 0;
 
 	D3D12_RESOURCE_DESC resDesc = {};
-	resDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	resDesc.Format = metadata.format;
 	resDesc.Width = metadata.width;
 	resDesc.Height = metadata.height;
 	resDesc.DepthOrArraySize = metadata.arraySize;
@@ -462,7 +462,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	result = _dev->CreateDescriptorHeap(&descHeapDesc, IID_PPV_ARGS(&texDescHeap));
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	srvDesc.Format = metadata.format;
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MipLevels = 1;
