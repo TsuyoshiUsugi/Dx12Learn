@@ -4,6 +4,7 @@
 #include <dxgi1_6.h>
 #include <vector>
 #include <DirectXMath.h>
+#include <DirectXTex.h>
 
 #include <d3dcompiler.h>
 #ifdef _DEBUG
@@ -13,6 +14,7 @@
 #pragma comment(lib,"d3d12.lib")
 #pragma comment(lib,"dxgi.lib")
 #pragma comment(lib,"d3dcompiler.lib")
+#pragma comment(lib,"DirectXTex.lib")
 
 using namespace std;
 using namespace DirectX;
@@ -400,7 +402,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	scissorRect.right = scissorRect.left + WINDOW_WIDTH;
 	scissorRect.bottom = scissorRect.top + WINDOW_HEIGHT;
 
-	struct  TexRGBA
+	TexMetadata metadata = {};
+	ScratchImage scratchImg = {};
+	result = LoadFromWICFile(L"img/textest.png", WIC_FLAGS_NONE, &metadata, scratchImg);
+	auto img = scratchImg.GetImage(0, 0, 0);
+
+	/*struct  TexRGBA
 	{
 		unsigned char R, G, B, A;
 	};
@@ -413,7 +420,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		rgba.G = rand() % 256;
 		rgba.B = rand() % 256;
 		rgba.A = 255;
-	}
+	}*/
 
 	D3D12_HEAP_PROPERTIES texHeapProp = {};
 	texHeapProp.Type = D3D12_HEAP_TYPE_CUSTOM;
@@ -424,13 +431,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	D3D12_RESOURCE_DESC resDesc = {};
 	resDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	resDesc.Width = 256;
-	resDesc.Height = 256;
-	resDesc.DepthOrArraySize = 1;
-	resDesc.SampleDesc.Count = 1;
+	resDesc.Width = metadata.width;
+	resDesc.Height = metadata.height;
+	resDesc.DepthOrArraySize = metadata.arraySize;
+	resDesc.SampleDesc.Count = metadata.mipLevels;
 	resDesc.SampleDesc.Quality = 0;
 	resDesc.MipLevels = 1;
-	resDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	resDesc.Dimension = static_cast<D3D12_RESOURCE_DIMENSION>(metadata.dimension);
 	resDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	resDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
@@ -444,7 +451,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		IID_PPV_ARGS(&texBuff)
 	);
 
-	result = texBuff->WriteToSubresource(0, nullptr, textureData.data(), 256 * sizeof(TexRGBA), textureData.size() * sizeof(TexRGBA));
+	result = texBuff->WriteToSubresource(0, nullptr, img->pixels, img->rowPitch, img->slicePitch);
 	ID3D12DescriptorHeap* texDescHeap = nullptr;
 	D3D12_DESCRIPTOR_HEAP_DESC descHeapDesc = {};
 
