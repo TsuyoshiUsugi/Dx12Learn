@@ -1,9 +1,2 @@
 ﻿  main.cpp
-C:\Users\vantan\source\repos\Dx12Test\Dx12Test\main.cpp(199,24): warning C4018: '<': signed と unsigned の数値を比較しようとしました。
-C:\Users\vantan\source\repos\Dx12Test\Dx12Test\main.cpp(430,27): warning C4267: '=': 'size_t' から 'UINT' に変換しました。データが失われているかもしれません。
-C:\Users\vantan\source\repos\Dx12Test\Dx12Test\main.cpp(431,37): warning C4267: '=': 'size_t' から 'UINT16' に変換しました。データが失われているかもしれません。
-C:\Users\vantan\source\repos\Dx12Test\Dx12Test\main.cpp(432,37): warning C4267: '=': 'size_t' から 'UINT' に変換しました。データが失われているかもしれません。
-C:\Users\vantan\source\repos\Dx12Test\Dx12Test\main.cpp(449,82): warning C4267: '引数': 'size_t' から 'UINT' に変換しました。データが失われているかもしれません。
-C:\Users\vantan\source\repos\Dx12Test\Dx12Test\main.cpp(449,67): warning C4267: '引数': 'size_t' から 'UINT' に変換しました。データが失われているかもしれません。
-C:\Users\vantan\source\repos\Dx12Test\Dx12Test\main.cpp(488,44): warning C4244: '=': 'UINT64' から 'UINT' への変換です。データが失われる可能性があります。
   Dx12Test.vcxproj -> C:\Users\vantan\source\repos\Dx12Test\x64\Debug\Dx12Test.exe
