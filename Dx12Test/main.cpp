@@ -22,6 +22,18 @@
 
 using namespace DirectX;
 
+#pragma pack(push,1)
+struct PMDVertex
+{
+	XMFLOAT3 pos;
+	XMFLOAT3 normal;
+	XMFLOAT2 uv;
+	unsigned short boneno[2];
+	unsigned char  boneWeight;
+	unsigned char  edgeFlg;
+};
+#pragma pack(pop)
+
 ///@brief コンソール画面にフォーマット付き文字列を表示
 ///@param format フォーマット(%dとか%fとかの)
 ///@param 可変長引数
@@ -206,8 +218,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	char signature[3] = {};
 	PMDHeader pmdheader = {};
-	FILE* fp = nullptr;
+	FILE* fp;
 	auto err = fopen_s(&fp, "Model/初音ミク.pmd", "rb");
+	/*if (fp == nullptr)
+	{
+		char strerr[256];
+		strerror_s(strerr, 256,  err);
+		MessageBox(hwnd, strerr, "Open Error", MB_ICONERROR);
+		return -1;
+	}*/
 	fread(signature, sizeof(signature), 1, fp);
 	fread(&pmdheader, sizeof(pmdheader), 1, fp);
 
@@ -216,7 +235,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	constexpr size_t pmdvertex_size = 38;
 	std::vector<unsigned char> vertices(vertNum * pmdvertex_size);
-
+	/*for (auto i = 0; i < vertNum; i++)
+	{
+		fread(&vertices[i], pmdvertex_size, 1, fp);
+	}*/
 	fclose(fp);
 
 	//UPLOAD(確保は可能)
@@ -575,7 +597,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			break;
 		}
 
-		angle += 0.1f;
+		//angle += 0.1f;
 		worldMat = XMMatrixRotationY(angle);
 		*mapMatrix = worldMat * viewMat * projMat;
 
@@ -628,9 +650,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		//heapHandle.ptr += _dev->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 		//_cmdList->SetGraphicsRootDescriptorTable(1, heapHandle);
 
-		//_cmdList->DrawInstanced(vertNum, 1, 0, 0);
+		_cmdList->DrawInstanced(vertNum, 1, 0, 0);
 		//_cmdList->DrawIndexedInstanced(6, 1, 0, 0, 0);
-		_cmdList->DrawIndexedInstanced(vertNum, 1, 0, 0, 0);
+		//_cmdList->DrawIndexedInstanced(vertNum, 1, 0, 0, 0);
 		barrier = CD3DX12_RESOURCE_BARRIER::Transition(_backBuffers[bbIdx],
 			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 		_cmdList->ResourceBarrier(1,
