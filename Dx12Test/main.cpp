@@ -197,22 +197,32 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	ShowWindow(hwnd, SW_SHOW);//ウィンドウ表示
 
-	struct Vertex {
-		XMFLOAT3 pos;//XYZ座標
-		XMFLOAT2 uv;//UV座標
+	struct PMDHeader
+	{
+		float version;
+		char model_name[20];
+		char comment[256];
 	};
 
-	Vertex vertices[] = {
-		{{-1.f,-1.f,0.0f},{0.0f,1.0f} },//左下
-		{{-1.f,1.f,0.0f} ,{0.0f,0.0f}},//左上
-		{{1.f,-1.f,0.0f} ,{1.0f,1.0f}},//右下
-		{{1.f,1.f,0.0f} ,{1.0f,0.0f}},//右上
-	};
+	char signature[3] = {};
+	PMDHeader pmdheader = {};
+	FILE* fp = nullptr;
+	auto err = fopen_s(&fp, "Model/初音ミク.pmd", "rb");
+	fread(signature, sizeof(signature), 1, fp);
+	fread(&pmdheader, sizeof(pmdheader), 1, fp);
+
+	unsigned int vertNum;
+	fread(&vertNum, sizeof(vertNum), 1, fp);
+
+	constexpr size_t pmdvertex_size = 38;
+	std::vector<unsigned char> vertices(vertNum * pmdvertex_size);
+
+	fclose(fp);
 
 	//UPLOAD(確保は可能)
 	ID3D12Resource* vertBuff = nullptr;
 	auto heapProp = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-	auto resDesc = CD3DX12_RESOURCE_DESC::Buffer(sizeof(vertices));
+	auto resDesc = CD3DX12_RESOURCE_DESC::Buffer(vertices.size());
 	result = _dev->CreateCommittedResource(
 		&heapProp,
 		D3D12_HEAP_FLAG_NONE,
@@ -221,7 +231,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		nullptr,
 		IID_PPV_ARGS(&vertBuff));
 
-	Vertex* vertMap = nullptr;
+	unsigned char* vertMap = nullptr;
 	result = vertBuff->Map(0, nullptr, (void**)&vertMap);
 
 	std::copy(std::begin(vertices), std::end(vertices), vertMap);
@@ -230,8 +240,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	D3D12_VERTEX_BUFFER_VIEW vbView = {};
 	vbView.BufferLocation = vertBuff->GetGPUVirtualAddress();//バッファの仮想アドレス
-	vbView.SizeInBytes = sizeof(vertices);//全バイト数
-	vbView.StrideInBytes = sizeof(vertices[0]);//1頂点あたりのバイト数
+	vbView.SizeInBytes = vertices.size();//全バイト数
+	vbView.StrideInBytes = pmdvertex_size;//1頂点あたりのバイト数
 
 	unsigned short indices[] = { 0,1,2, 2,1,3 };
 
