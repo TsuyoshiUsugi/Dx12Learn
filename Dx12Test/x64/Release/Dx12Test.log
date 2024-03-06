@@ -1,3 +1,3 @@
-﻿  main.cpp
-MSVCRT.lib(exe_main.obj) : error LNK2001: 外部シンボル main は未解決です
-C:\Users\vantan\source\repos\Dx12Test\x64\Release\Dx12Test.exe : fatal error LNK1120: 1 件の未解決の外部参照
+﻿FXC : error X3501: 'main': entrypoint not found
+  
+  compilation failed; no code produced
