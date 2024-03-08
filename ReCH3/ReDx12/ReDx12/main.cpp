@@ -9,7 +9,6 @@
 #include<iostream>
 #endif
 
-
 #pragma comment(lib,"d3d12.lib")
 #pragma comment(lib,"dxgi.lib")
 
@@ -43,7 +42,7 @@ LRESULT WindowProcedure(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 	return DefWindowProc(hwnd, msg, wparam, lparam);//規定の処理を行う
 }
 
-#pragma region 初期化にあたり必要なもの
+#pragma region 初期化にあたり必要な変数周り
 const unsigned int window_width = 1280;
 const unsigned int window_height = 720;
 ID3D12Device* dev_ = nullptr;						
@@ -53,8 +52,6 @@ ID3D12CommandAllocator* cmdAllocator_ = nullptr;
 ID3D12GraphicsCommandList* cmdList_ = nullptr;
 ID3D12CommandQueue* cmdQueue_ = nullptr;
 #pragma endregion
-
-
 
 void EnableDebugLayer() {
 	ID3D12Debug* debugLayer = nullptr;
@@ -66,6 +63,12 @@ void EnableDebugLayer() {
 
 #ifdef _DEBUG
 int main() {
+#ifdef _DEBUG
+	//デバッグレイヤーをオンに
+	//デバイス生成時前にやっておかないと、デバイス生成後にやると
+	//デバイスがロストしてしまうので注意
+	EnableDebugLayer();
+#endif
 #else
 #include<Windows.h>
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
@@ -98,13 +101,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		nullptr);//追加パラメータ
 #pragma endregion
 
-#ifdef _DEBUG
-	//デバッグレイヤーをオンに
-	//デバイス生成時前にやっておかないと、デバイス生成後にやると
-	//デバイスがロストしてしまうので注意
-	EnableDebugLayer();
-#endif
+#pragma region DirectX12周りの初期化処理
 	//DirectX12まわり初期化
+	HRESULT result = S_OK;	//APIの戻り値を受け取る変数(使い回す)
 	//フィーチャレベル列挙
 	D3D_FEATURE_LEVEL levels[] = {
 		D3D_FEATURE_LEVEL_12_1,
@@ -112,19 +111,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		D3D_FEATURE_LEVEL_11_1,
 		D3D_FEATURE_LEVEL_11_0,
 	};
-	HRESULT result = S_OK;
 	if (FAILED(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, IID_PPV_ARGS(&dxgiFactory_)))) {
 		if (FAILED(CreateDXGIFactory2(0, IID_PPV_ARGS(&dxgiFactory_)))) {
 			return -1;
 		}
 	}
-	std::vector <IDXGIAdapter*> adapters;
+	std::vector <IDXGIAdapter*> adapters;	//アダプタ(グラフィックボード)列挙用
 	IDXGIAdapter* tmpAdapter = nullptr;
 	for (int i = 0; dxgiFactory_->EnumAdapters(i, &tmpAdapter) != DXGI_ERROR_NOT_FOUND; ++i) {
 		adapters.push_back(tmpAdapter);
 	}
 	for (auto adpt : adapters) {
-		DXGI_ADAPTER_DESC adesc = {};
+		DXGI_ADAPTER_DESC adesc = {};	//アダプタの情報を受け取る変数
 		adpt->GetDesc(&adesc);
 		std::wstring strDesc = adesc.Description;
 		if (strDesc.find(L"NVIDIA") != std::string::npos) {
@@ -141,7 +139,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			break;
 		}
 	}
+#pragma endregion
 
+#pragma region コマンドキュー、アロケーター、リストまわりの初期化
 	result = dev_->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&cmdAllocator_));
 	result = dev_->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, cmdAllocator_, nullptr, IID_PPV_ARGS(&cmdList_));
 	//_cmdList->Close();
@@ -151,7 +151,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	cmdQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;//プライオリティ特に指定なし
 	cmdQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;//ここはコマンドリストと合わせてください
 	result = dev_->CreateCommandQueue(&cmdQueueDesc, IID_PPV_ARGS(&cmdQueue_));//コマンドキュー生成
+#pragma endregion
 
+#pragma region SwapChainの初期化
 	DXGI_SWAP_CHAIN_DESC1 swapchainDesc = {};
 	swapchainDesc.Width = window_width;
 	swapchainDesc.Height = window_height;
@@ -165,23 +167,24 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	swapchainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	swapchainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
 	swapchainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-
-
 	result = dxgiFactory_->CreateSwapChainForHwnd(cmdQueue_,
 		hwnd,
 		&swapchainDesc,
 		nullptr,
 		nullptr,
 		(IDXGISwapChain1**)&swapchain_);
+#pragma endregion
 
-	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
+#pragma region レンダーターゲットビューの初期化
+	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};	//下で作るRTVのヒープの設定
 	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;//レンダーターゲットビューなので当然RTV
 	heapDesc.NodeMask = 0;
 	heapDesc.NumDescriptors = 2;//表裏の２つ
 	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;//特に指定なし
 	ID3D12DescriptorHeap* rtvHeaps = nullptr;
 	result = dev_->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&rtvHeaps));
-	DXGI_SWAP_CHAIN_DESC swcDesc = {};
+	//ここからバックバッファディスクリプタの関連付け
+	DXGI_SWAP_CHAIN_DESC swcDesc = {};	//SwapChainの設定を受け取る変数
 	result = swapchain_->GetDesc(&swcDesc);
 	std::vector<ID3D12Resource*> _backBuffers(swcDesc.BufferCount);
 	D3D12_CPU_DESCRIPTOR_HANDLE handle = rtvHeaps->GetCPUDescriptorHandleForHeapStart();
@@ -190,6 +193,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		dev_->CreateRenderTargetView(_backBuffers[i], nullptr, handle);
 		handle.ptr += dev_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	}
+#pragma endregion
+	
 	ID3D12Fence* _fence = nullptr;
 	UINT64 _fenceVal = 0;
 	result = dev_->CreateFence(_fenceVal, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_fence));
