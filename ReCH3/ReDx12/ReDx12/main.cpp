@@ -221,6 +221,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		//バックバッファのインデックスを取得
 		auto bbIdx = swapchain_->GetCurrentBackBufferIndex();
 
+		//リソースの生成と設定
 		D3D12_RESOURCE_BARRIER BarrierDesc = {};
 		BarrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 		BarrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
@@ -243,14 +244,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		BarrierDesc.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
 		cmdList_->ResourceBarrier(1, &BarrierDesc);
 
-		//命令のクローズ
+		//ここまでで命令を終わらせる
 		cmdList_->Close();
-
-
-		//コマンドリストの実行
+		//命令の実行
 		ID3D12CommandList* cmdlists[] = { cmdList_ };
 		cmdQueue_->ExecuteCommandLists(1, cmdlists);
-		////待ち
+		//命令完了待ち
+#pragma region 命令完了確認
 		cmdQueue_->Signal(_fence, ++_fenceVal);
 
 		if (_fence->GetCompletedValue() != _fenceVal) {
@@ -259,6 +259,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			WaitForSingleObject(event, INFINITE);
 			CloseHandle(event);
 		}
+#pragma endregion
 		cmdAllocator_->Reset();//キューをクリア
 		cmdList_->Reset(cmdAllocator_, nullptr);//再びコマンドリストをためる準備
 		//フリップ
@@ -268,7 +269,5 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//登録解除
 	UnregisterClass(w.lpszClassName, w.hInstance);
 #pragma endregion
-
-	
 	return 0;
 }
