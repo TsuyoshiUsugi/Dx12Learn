@@ -53,6 +53,9 @@ ID3D12GraphicsCommandList* cmdList_ = nullptr;
 ID3D12CommandQueue* cmdQueue_ = nullptr;
 #pragma endregion
 
+/// <summary>
+/// デバッグ機能を有効にする
+/// </summary>
 void EnableDebugLayer() {
 	ID3D12Debug* debugLayer = nullptr;
 	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugLayer)))) {
@@ -195,17 +198,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	}
 #pragma endregion
 	
+#pragma region フェンスの初期化
 	ID3D12Fence* _fence = nullptr;
 	UINT64 _fenceVal = 0;
 	result = dev_->CreateFence(_fenceVal, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_fence));
-
+#pragma endregion
 	ShowWindow(hwnd, SW_SHOW);//ウィンドウ表示
-
 #pragma region ゲームループ
-
 	MSG msg = {};
 	while (true) {
-
+#pragma region Window関連 
 		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
@@ -214,8 +216,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		if (msg.message == WM_QUIT) {
 			break;
 		}
-
-
+#pragma endregion
 		//DirectX処理
 		//バックバッファのインデックスを取得
 		auto bbIdx = swapchain_->GetCurrentBackBufferIndex();
@@ -260,11 +261,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		}
 		cmdAllocator_->Reset();//キューをクリア
 		cmdList_->Reset(cmdAllocator_, nullptr);//再びコマンドリストをためる準備
-
-
 		//フリップ
 		swapchain_->Present(1, 0);
-
 	}
 
 	//登録解除
