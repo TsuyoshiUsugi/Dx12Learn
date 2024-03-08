@@ -1,0 +1,8 @@
+﻿  compilation object save succeeded; see C:\Users\vantan\source\repos\Dx12Test\CH7\x64\Debug\BasicVertexShader.cso
+C:\Users\vantan\source\repos\Dx12Test\CH7\Dx12Test\BasicPixelShader.hlsl(15,24-48): warning X3206: 'dot': implicit truncation of vector type
+  
+  compilation object save succeeded; see C:\Users\vantan\source\repos\Dx12Test\CH7\x64\Debug\BasicPixelShader.cso
+  main.cpp
+C:\Users\vantan\source\repos\Dx12Test\CH7\Dx12Test\main.cpp(287,21): warning C4018: '<': signed と unsigned の数値を比較しようとしました。
+  LINK : 前回のインクリメンタル リンクで C:\Users\vantan\source\repos\Dx12Test\CH7\x64\Debug\Dx12Test.exe が見つからなかったか、ビルドされませんでした。フル リンクを行います。
+  Dx12Test.vcxproj -> C:\Users\vantan\source\repos\Dx12Test\CH7\x64\Debug\Dx12Test.exe

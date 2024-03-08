@@ -1,3 +1,0 @@
-﻿  main.cpp
-C:\Users\vantan\source\repos\Dx12Test\Dx12Test\main.cpp(265,36): warning C4267: '=': 'size_t' から 'UINT' に変換しました。データが失われているかもしれません。
-  Dx12Test.vcxproj -> C:\Users\vantan\source\repos\Dx12Test\x64\Debug\Dx12Test.exe
